@@ -6,54 +6,57 @@ module alarm_module(
     output reg piezo
 );
 
-reg [15:0] cnt;
-reg [3:0] beep_count;
+reg [15:0] tone_cnt;
+reg [3:0] beep_cnt;
 reg alarm_prev;
-reg alarm_done;
+reg alarm_active;
 
 always @(posedge clk)
 begin
-    cnt <= cnt + 1;
-
-    alarm_prev <= alarm_on;
 
     if(alarm_on && !alarm_prev)
     begin
-        beep_count <= 0;
-        alarm_done <= 0;
+        alarm_active <= 1'b1;
+        beep_cnt <= 4'd0;
+        tone_cnt <= 16'd0;
     end
 
-    if(alarm_on && !alarm_done)
+    alarm_prev <= alarm_on;
+
+    if(alarm_active)
     begin
-        if(cnt == 16'd500)
+        tone_cnt <= tone_cnt + 1;
+
+        if(tone_cnt >= 16'd100)
         begin
-            cnt <= 0;
+            tone_cnt <= 16'd0;
             piezo <= ~piezo;
 
             if(piezo)
             begin
-                beep_count <= beep_count + 1;
+                beep_cnt <= beep_cnt + 1;
 
-                if(beep_count == 4)
+                if(beep_cnt >= 4'd9)
                 begin
-                    alarm_done <= 1;
-                    piezo <= 0;
+                    alarm_active <= 1'b0;
+                    piezo <= 1'b0;
                 end
             end
         end
     end
     else if(unlock_on)
     begin
-        piezo <= cnt[9];
+        piezo <= tone_cnt[5];
     end
     else if(key_led)
     begin
-        piezo <= cnt[11];
+        piezo <= tone_cnt[7];
     end
     else
     begin
-        piezo <= 0;
+        piezo <= 1'b0;
     end
+
 end
 
 endmodule
